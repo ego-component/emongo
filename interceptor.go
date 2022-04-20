@@ -137,7 +137,7 @@ func fileWithLineNum() string {
 		if !ok {
 			break
 		}
-		if (!strings.HasSuffix(file, "github/ego-component/emongo/wrapped_client.go") && !strings.Contains(file, "github/ego-component/emongo/wrapped_collection.go")) || strings.HasSuffix(file, "_test.go") {
+		if (!(strings.Contains(file, "ego-component/emongo") && strings.HasSuffix(file, "wrapped_client.go")) && !(strings.Contains(file, "ego-component/emongo") && strings.Contains(file, "wrapped_collection.go"))) || strings.HasSuffix(file, "_test.go") {
 			return file + ":" + strconv.FormatInt(int64(line), 10)
 		}
 	}
