@@ -35,7 +35,7 @@ type Config struct {
 
 ## 4 优雅的Debug
 通过开启``debug``配置和命令行的``export EGO_DEBUG=true``，我们就可以在测试环境里看到请求里的配置名、地址、耗时、请求数据、响应数据
-![img.png](../../images/frame/client/mongo/mongo1.png)
+![img.png](https://cdn.gocn.vip/ego/assets/img/mongo1.d5d9680d.png)
 
 
 ## 5 用户配置
