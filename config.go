@@ -18,6 +18,8 @@ type config struct {
 	EnableTraceInterceptor     bool          `json:"enableTraceInterceptor" toml:"enableTraceInterceptor"`         // EnableTraceInterceptor 是否启用trace拦截器
 	SlowLogThreshold           time.Duration // SlowLogThreshold 慢日志门限值，超过该门限值的请求，将被记录到慢日志中
 	interceptors               []Interceptor
+	// TLS 支持
+	Authentication Authentication
 }
 
 // DefaultConfig 返回默认配置

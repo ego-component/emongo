@@ -48,6 +48,11 @@ func (c *Container) newSession(config config) *Client {
 	mps := uint64(config.PoolLimit)
 
 	clientOpts := options.Client()
+	// 加载 TLS 配置
+	err := config.Authentication.ConfigureAuthentication(clientOpts)
+	if err != nil {
+		c.logger.Panic("mongo TLS configuration", elog.Any("authentication", config.Authentication), elog.Any("error", err))
+	}
 	clientOpts.MaxPoolSize = &mps
 	clientOpts.SocketTimeout = &config.SocketTimeout
 	if c.config.EnableTraceInterceptor {
