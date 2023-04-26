@@ -48,11 +48,11 @@ func debugInterceptor(compName string, c *config) func(processFn) processFn {
 			err := oldProcess(cmd)
 			cost := time.Since(beg)
 			if err != nil {
-				log.Println("[emongo.response]", xdebug.MakeReqAndResError(fileWithLineNum(), compName,
+				log.Println("emongo.response", xdebug.MakeReqAndResError(fileWithLineNum(), compName,
 					fmt.Sprintf("%v", c.DSN), cost, fmt.Sprintf("%s %v", cmd.name, mustJsonMarshal(cmd.req)), err.Error()),
 				)
 			} else {
-				log.Println("[emongo.response]", xdebug.MakeReqAndResInfo(fileWithLineNum(), compName,
+				log.Println("emongo.response", xdebug.MakeReqAndResInfo(fileWithLineNum(), compName,
 					fmt.Sprintf("%v", c.DSN), cost, fmt.Sprintf("%s %v", cmd.name, mustJsonMarshal(cmd.req)), fmt.Sprintf("%v", cmd.res)),
 				)
 			}

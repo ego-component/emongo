@@ -12,6 +12,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
+	"go.mongodb.org/mongo-driver/x/mongo/driver/connstring"
 	"go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo"
 )
 
@@ -114,7 +115,7 @@ func (c *Container) Build(options ...Option) *Component {
 	if options == nil {
 		options = make([]Option, 0)
 	}
-	if c.config.Debug {
+	if c.config.Debug || eapp.IsDevelopmentMode() {
 		options = append(options, WithInterceptor(debugInterceptor(c.name, c.config)))
 	}
 	if c.config.EnableMetricInterceptor {
@@ -132,8 +133,19 @@ func (c *Container) Build(options ...Option) *Component {
 
 	c.logger = c.logger.With(elog.FieldAddr(fmt.Sprintf("%s", c.config.DSN)))
 	client := c.newSession(*c.config)
+
+	validateDsn, err := connstring.ParseAndValidate(c.config.DSN)
+	if err != nil {
+		c.logger.Panic("parse mongo dsn fail", elog.FieldErr(err))
+	}
+	// 为了兼容之前的老版本，有的没设置dbName，不能panic。
+	if validateDsn.Database == "" {
+		c.logger.Error("database is empty")
+	}
+
 	return &Component{
 		config: c.config,
+		dbName: validateDsn.Database,
 		client: client,
 		logger: c.logger,
 	}
