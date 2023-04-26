@@ -124,21 +124,22 @@ func (c *Container) Build(options ...Option) *Component {
 		option(c)
 	}
 
-	c.logger = c.logger.With(elog.FieldAddr(fmt.Sprintf("%s", c.config.DSN)))
+	c.logger = c.logger.With(elog.FieldKey(c.name))
 	client := c.newSession(*c.config)
 
 	validateDsn, err := connstring.ParseAndValidate(c.config.DSN)
 	if err != nil {
-		c.logger.Panic("parse mongo dsn fail", elog.FieldErr(err))
+		c.logger.Panic("parse mongo dsn fail", elog.FieldErr(err), elog.FieldKey(fmt.Sprintf("%s", c.config.DSN)))
 	}
 	// 为了兼容之前的老版本，有的没设置dbName，不能panic。
 	if validateDsn.Database == "" {
 		c.logger.Error("database is empty")
 	}
+	c.config.keyName = c.name + "." + validateDsn.Database
+	c.config.dbName = validateDsn.Database
 
 	return &Component{
 		config: c.config,
-		dbName: validateDsn.Database,
 		client: client,
 		logger: c.logger,
 	}
