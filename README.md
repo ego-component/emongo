@@ -34,6 +34,8 @@ type Config struct {
     EnableAccessInterceptor    bool          `json:"enableAccessInterceptor" toml:"enableAccessInterceptor"`       // EnableAccessInterceptor 是否启用access拦截器
     EnableTraceInterceptor     bool          `json:"enableTraceInterceptor" toml:"enableTraceInterceptor"`         // EnableTraceInterceptor 是否启用trace拦截器
     SlowLogThreshold           time.Duration // SlowLogThreshold 慢日志门限值，超过该门限值的请求，将被记录到慢日志中
+    // TLS 支持
+    Authentication Authentication
 }
 ```
 
@@ -45,8 +47,15 @@ type Config struct {
 ## 5 用户配置
 ```toml
 [mongo]
-debug=true
-dsn="mongodb://user:password@localhost:27017,localhost:27018"
+  debug=true
+  dsn="mongodb://user:password@localhost:27017,localhost:27018"
+  [mongo.authentication]
+    [mongo.authentication.tls]
+      enabled=false
+      CAFile=""
+      CertFile="./cert/tls.pem"
+      KeyFile="./cert/tls.key"
+      insecureSkipVerify=true
 ```
 
 ## 6 用户代码
