@@ -6,10 +6,12 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gotomicro/ego/core/eapp"
 	"github.com/gotomicro/ego/core/econf"
 	"github.com/gotomicro/ego/core/elog"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo"
 )
 
@@ -45,22 +47,35 @@ func Load(key string) *Container {
 func (c *Container) newSession(config config) *Client {
 	// check config param
 	c.isConfigErr(config)
-	mps := uint64(config.PoolLimit)
 
 	clientOpts := options.Client()
-	clientOpts.MaxPoolSize = &mps
-	clientOpts.SocketTimeout = &config.SocketTimeout
 	if c.config.EnableTraceInterceptor {
 		clientOpts.Monitor = otelmongo.NewMonitor()
 	}
+	clientOpts.SetSocketTimeout(config.SocketTimeout)
+	clientOpts.SetMaxPoolSize(uint64(config.MaxPoolSize))
+	clientOpts.SetMinPoolSize(uint64(config.MinPoolSize))
+	clientOpts.SetMaxConnIdleTime(config.MaxConnIdleTime)
 
-	client, err := Connect(context.Background(), clientOpts.ApplyURI(config.DSN))
+	ctx, cancel := context.WithTimeout(context.Background(), config.DialTimeout)
+	defer cancel()
+
+	client, err := Connect(ctx, clientOpts.ApplyURI(config.DSN))
 	if err != nil {
 		c.logger.Panic("dial mongo", elog.FieldAddr(config.DSN), elog.Any("error", err))
 	}
-	if c.config.Debug {
+	if eapp.IsDevelopmentMode() || c.config.Debug {
 		client.logMode = true
 	}
+
+	// 必须加入ping包，否则账号问题，需要发报文才能发现问题
+	ctx, cancel = context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	err = client.Ping(ctx, readpref.Primary())
+	if err != nil {
+		c.logger.Panic("dial mongo", elog.FieldAddr(config.DSN), elog.Any("error", err))
+	}
+
 	instances.Store(c.name, client)
 	client.wrapProcessor(InterceptorChain(config.interceptors...))
 	return client
@@ -84,9 +99,6 @@ func get(name string) *mongo.Client {
 func (c *Container) isConfigErr(config config) {
 	if config.SocketTimeout == time.Duration(0) {
 		c.logger.Panic("invalid config", elog.FieldExtMessage("socketTimeout"))
-	}
-	if config.PoolLimit == 0 {
-		c.logger.Panic("invalid config", elog.FieldExtMessage("poolLimit"))
 	}
 }
 
