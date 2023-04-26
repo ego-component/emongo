@@ -9,7 +9,6 @@ const PackageName = "component.emongo"
 // Component client (cmdable and config)
 type Component struct {
 	config *config
-	dbName string // dbname 解析后的dbName放到这里
 	client *Client
 	logger *elog.Component
 }
@@ -21,5 +20,5 @@ func (c *Component) Client() *Client {
 
 // DbName returns emongo Client
 func (c *Component) DbName() string {
-	return c.dbName
+	return c.config.dbName
 }

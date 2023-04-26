@@ -49,11 +49,11 @@ func debugInterceptor(compName string, c *config) func(processFn) processFn {
 			cost := time.Since(beg)
 			if err != nil {
 				log.Println("emongo.response", xdebug.MakeReqAndResError(fileWithLineNum(), compName,
-					fmt.Sprintf("%v", c.DSN), cost, fmt.Sprintf("%s %v", cmd.name, mustJsonMarshal(cmd.req)), err.Error()),
+					fmt.Sprintf("%v", c.keyName), cost, fmt.Sprintf("%s %v", cmd.name, mustJsonMarshal(cmd.req)), err.Error()),
 				)
 			} else {
 				log.Println("emongo.response", xdebug.MakeReqAndResInfo(fileWithLineNum(), compName,
-					fmt.Sprintf("%v", c.DSN), cost, fmt.Sprintf("%s %v", cmd.name, mustJsonMarshal(cmd.req)), fmt.Sprintf("%v", cmd.res)),
+					fmt.Sprintf("%v", c.keyName), cost, fmt.Sprintf("%s %v", cmd.name, mustJsonMarshal(cmd.req)), fmt.Sprintf("%v", cmd.res)),
 				)
 			}
 			return err
@@ -69,14 +69,14 @@ func metricInterceptor(compName string, c *config, logger *elog.Component) func(
 			cost := time.Since(beg)
 			if err != nil {
 				if errors.Is(err, mongo.ErrNoDocuments) {
-					emetric.ClientHandleCounter.Inc(metricType, compName, cmd.name, c.DSN, "Empty")
+					emetric.ClientHandleCounter.Inc(metricType, compName, cmd.name, c.keyName, "Empty")
 				} else {
-					emetric.ClientHandleCounter.Inc(metricType, compName, cmd.name, c.DSN, "Error")
+					emetric.ClientHandleCounter.Inc(metricType, compName, cmd.name, c.keyName, "Error")
 				}
 			} else {
-				emetric.ClientHandleCounter.Inc(metricType, compName, cmd.name, c.DSN, "OK")
+				emetric.ClientHandleCounter.Inc(metricType, compName, cmd.name, c.keyName, "OK")
 			}
-			emetric.ClientHandleHistogram.WithLabelValues(metricType, compName, cmd.name, c.DSN).Observe(cost.Seconds())
+			emetric.ClientHandleHistogram.WithLabelValues(metricType, compName, cmd.name, c.keyName).Observe(cost.Seconds())
 			return err
 		}
 	}
