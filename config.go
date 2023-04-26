@@ -26,12 +26,14 @@ type config struct {
 // DefaultConfig 返回默认配置
 func DefaultConfig() *config {
 	return &config{
-		DSN:              "",
-		Debug:            false,
-		DialTimeout:      xtime.Duration("10s"),
-		SocketTimeout:    xtime.Duration("300s"),
-		SlowLogThreshold: xtime.Duration("600ms"),
-		MinPoolSize:      0,
-		MaxPoolSize:      300,
+		DSN:                     "",
+		Debug:                   false,
+		DialTimeout:             xtime.Duration("10s"),
+		SocketTimeout:           xtime.Duration("300s"),
+		SlowLogThreshold:        xtime.Duration("600ms"),
+		MinPoolSize:             0,
+		MaxPoolSize:             300,
+		EnableMetricInterceptor: true,
+		EnableTraceInterceptor:  true,
 	}
 }
