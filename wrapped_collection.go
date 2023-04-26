@@ -201,6 +201,15 @@ func (wc *Collection) InsertOne(ctx context.Context, document interface{}, opts 
 	return
 }
 
+func (wc *Collection) UpdateByID(ctx context.Context, id interface{}, update interface{}, opts ...*options.UpdateOptions) (res *mongo.UpdateResult, err error) {
+	_ = wc.processor(func(c *cmd) error {
+		res, err = wc.coll.UpdateByID(ctx, id, update, opts...)
+		logCmd(wc.logMode, c, "UpdateByID", res, id, update)
+		return err
+	})
+	return
+}
+
 func (wc *Collection) Name() string { return wc.coll.Name() }
 
 func (wc *Collection) ReplaceOne(ctx context.Context, filter, replacement interface{}, opts ...*options.ReplaceOptions) (res *mongo.UpdateResult, err error) {

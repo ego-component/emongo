@@ -7,10 +7,13 @@ import (
 )
 
 type config struct {
-	DSN                        string        `json:"dsn" toml:"dsn"`                                               // DSN DSN地址
-	Debug                      bool          `json:"debug" toml:"debug"`                                           // Debug 是否开启debug模式
-	SocketTimeout              time.Duration `json:"socketTimeout" toml:"socketTimeout"`                           // SocketTimeout 创建连接的超时时间
-	PoolLimit                  int           `json:"poolLimit" toml:"poolLimit"`                                   // PoolLimit 连接池大小(最大连接数)
+	DSN                        string        `json:"dsn" toml:"dsn"`     // DSN DSN地址
+	Debug                      bool          `json:"debug" toml:"debug"` // Debug 是否开启debug模式
+	DialTimeout                time.Duration // 连接超时
+	SocketTimeout              time.Duration `json:"socketTimeout" toml:"socketTimeout"` // SocketTimeout 创建连接的超时时间
+	MaxConnIdleTime            time.Duration `json:"maxConnIdleTime"`
+	MinPoolSize                int           // MinPoolSize 连接池大小(最小连接数)
+	MaxPoolSize                int           `json:"maxPoolSize" toml:"maxPoolSize"`                               // MaxPoolSize 连接池大小(最大连接数)
 	EnableMetricInterceptor    bool          `json:"enableMetricInterceptor" toml:"enableMetricInterceptor"`       // EnableMetricInterceptor 是否启用prometheus metric拦截器
 	EnableAccessInterceptorReq bool          `json:"enableAccessInterceptorReq" toml:"enableAccessInterceptorReq"` // EnableAccessInterceptorReq 是否启用access req拦截器，此配置只有在EnableAccessInterceptor=true时才会生效
 	EnableAccessInterceptorRes bool          `json:"enableAccessInterceptorRes" toml:"enableAccessInterceptorRes"` // EnableAccessInterceptorRes 是否启用access res拦截器，此配置只有在EnableAccessInterceptor=true时才会生效
@@ -25,9 +28,12 @@ type config struct {
 // DefaultConfig 返回默认配置
 func DefaultConfig() *config {
 	return &config{
-		DSN:           "",
-		Debug:         false,
-		SocketTimeout: xtime.Duration("300s"),
-		PoolLimit:     100,
+		DSN:              "",
+		Debug:            false,
+		DialTimeout:      xtime.Duration("10s"),
+		SocketTimeout:    xtime.Duration("300s"),
+		SlowLogThreshold: xtime.Duration("600ms"),
+		MinPoolSize:      0,
+		MaxPoolSize:      300,
 	}
 }
