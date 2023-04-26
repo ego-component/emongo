@@ -50,6 +50,13 @@ func (c *Container) newSession(config config) *Client {
 	c.isConfigErr(config)
 
 	clientOpts := options.Client()
+
+	// 加载 TLS 配置
+	err := config.Authentication.ConfigureAuthentication(clientOpts)
+	if err != nil {
+		c.logger.Panic("mongo TLS configuration", elog.Any("authentication", config.Authentication), elog.Any("error", err))
+	}
+
 	if c.config.EnableTraceInterceptor {
 		clientOpts.Monitor = otelmongo.NewMonitor()
 	}
