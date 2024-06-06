@@ -24,6 +24,7 @@ type config struct {
   interceptors               []Interceptor
 	keyName                    string
 	dbName                     string
+	OnFail                     string        // 创建连接的错误级别，=panic时，如果创建失败，立即panic，默认连接不上panic
 
 }
 
