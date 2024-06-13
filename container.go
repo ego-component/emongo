@@ -63,7 +63,7 @@ func (c *Container) newSession(config config) *Client {
 	clientOpts.SetMinPoolSize(uint64(config.MinPoolSize))
 	clientOpts.SetMaxConnIdleTime(config.MaxConnIdleTime)
 
-	ctx, cancel := context.WithTimeoutCause(context.Background(), config.DialTimeout, fmt.Errorf("mongo dail timeout"))
+	ctx, cancel := context.WithTimeoutCause(context.Background(), config.DialTimeout, fmt.Errorf("mongo dail %v timeout", config.DialTimeout))
 	defer cancel()
 
 	client, err := Connect(ctx, clientOpts.ApplyURI(config.DSN))
@@ -84,7 +84,7 @@ func (c *Container) newSession(config config) *Client {
 	}
 
 	// 必须加入ping包，否则账号问题，需要发报文才能发现问题
-	ctx, cancel = context.WithTimeout(context.Background(), 2*time.Second)
+	ctx, cancel = context.WithTimeoutCause(context.Background(), 2*time.Second, fmt.Errorf("ping mongo 2s timeout"))
 	defer cancel()
 	err = client.Ping(ctx, readpref.Primary())
 	if err != nil {
