@@ -3,13 +3,11 @@ package emongo
 import (
 	"context"
 	"fmt"
-	"sync"
 	"time"
 
 	"github.com/gotomicro/ego/core/eapp"
 	"github.com/gotomicro/ego/core/econf"
 	"github.com/gotomicro/ego/core/elog"
-	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"go.mongodb.org/mongo-driver/x/mongo/driver/connstring"
@@ -65,44 +63,62 @@ func (c *Container) newSession(config config) *Client {
 	clientOpts.SetMinPoolSize(uint64(config.MinPoolSize))
 	clientOpts.SetMaxConnIdleTime(config.MaxConnIdleTime)
 
-	ctx, cancel := context.WithTimeout(context.Background(), config.DialTimeout)
+	ctx, cancel := context.WithTimeoutCause(context.Background(), config.DialTimeout, fmt.Errorf("mongo dail %v timeout", config.DialTimeout))
 	defer cancel()
 
 	client, err := Connect(ctx, clientOpts.ApplyURI(config.DSN))
 	if err != nil {
-		c.logger.Panic("dial mongo", elog.FieldAddr(config.DSN), elog.Any("error", err))
+		if c.config.OnFail == "panic" {
+			if eapp.IsDevelopmentMode() {
+				c.logger.Panic("dial mongo fail", elog.FieldErr(err), elog.FieldValueAny(c.config))
+			} else {
+				c.logger.Panic("dial mongo fail", elog.FieldErr(err), elog.FieldAddr(c.name))
+			}
+		} else {
+			c.logger.Error("dial mongo fail", elog.FieldErr(err), elog.FieldAddr(c.name))
+			return client
+		}
 	}
 	if eapp.IsDevelopmentMode() || c.config.Debug {
 		client.logMode = true
 	}
 
 	// 必须加入ping包，否则账号问题，需要发报文才能发现问题
-	ctx, cancel = context.WithTimeout(context.Background(), 2*time.Second)
+	ctx, cancel = context.WithTimeoutCause(context.Background(), 2*time.Second, fmt.Errorf("ping mongo 2s timeout"))
 	defer cancel()
 	err = client.Ping(ctx, readpref.Primary())
 	if err != nil {
-		c.logger.Panic("dial mongo", elog.FieldAddr(config.DSN), elog.Any("error", err))
+		if c.config.OnFail == "panic" {
+			if eapp.IsDevelopmentMode() {
+				c.logger.Panic("ping mongo fail", elog.FieldErr(err), elog.FieldValueAny(c.config))
+			} else {
+				c.logger.Panic("ping mongo fail", elog.FieldErr(err), elog.FieldAddr(c.name))
+			}
+		} else {
+			c.logger.Error("ping mongo fail", elog.FieldErr(err), elog.FieldAddr(c.name))
+			return client
+		}
 	}
 
-	instances.Store(c.name, client)
+	//instances.Store(c.name, client)
 	client.wrapProcessor(InterceptorChain(config.interceptors...))
 	return client
 }
 
-var instances = sync.Map{}
-
-func iterate(fn func(name string, db *mongo.Client) bool) {
-	instances.Range(func(key, val interface{}) bool {
-		return fn(key.(string), val.(*mongo.Client))
-	})
-}
-
-func get(name string) *mongo.Client {
-	if ins, ok := instances.Load(name); ok {
-		return ins.(*mongo.Client)
-	}
-	return nil
-}
+//var instances = sync.Map{}
+//
+//func iterate(fn func(name string, db *mongo.Client) bool) {
+//	instances.Range(func(key, val interface{}) bool {
+//		return fn(key.(string), val.(*mongo.Client))
+//	})
+//}
+//
+//func get(name string) *mongo.Client {
+//	if ins, ok := instances.Load(name); ok {
+//		return ins.(*mongo.Client)
+//	}
+//	return nil
+//}
 
 func (c *Container) isConfigErr(config config) {
 	if config.SocketTimeout == time.Duration(0) {
@@ -136,7 +152,11 @@ func (c *Container) Build(options ...Option) *Component {
 
 	validateDsn, err := connstring.ParseAndValidate(c.config.DSN)
 	if err != nil {
-		c.logger.Panic("parse mongo dsn fail", elog.FieldErr(err), elog.FieldKey(fmt.Sprintf("%s", c.config.DSN)))
+		if eapp.IsDevelopmentMode() {
+			c.logger.Panic("parse mongo dsn fail", elog.FieldErr(err), elog.FieldValueAny(c.config))
+		} else {
+			c.logger.Panic("parse mongo dsn fail", elog.FieldErr(err), elog.FieldAddr(c.name))
+		}
 	}
 	// 为了兼容之前的老版本，有的没设置dbName，不能panic。
 	if validateDsn.Database == "" {
