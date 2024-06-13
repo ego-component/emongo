@@ -37,7 +37,6 @@ func DefaultConfig() *config {
 		SlowLogThreshold:        xtime.Duration("600ms"),
 		MinPoolSize:             0,
 		MaxPoolSize:             300,
-		OnFail:                  "panic",
 		EnableMetricInterceptor: true,
 		EnableTraceInterceptor:  true,
 	}

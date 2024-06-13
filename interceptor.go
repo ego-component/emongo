@@ -94,6 +94,9 @@ func accessInterceptor(compName string, c *config, logger *elog.Component) func(
 				elog.FieldComponentName(compName),
 				elog.FieldMethod(cmd.name),
 				elog.FieldCost(cost),
+				elog.String("dbName", cmd.dbName),
+				elog.String("collName", cmd.collName),
+				elog.String("cmdName", cmd.name),
 			)
 			if c.EnableAccessInterceptorReq {
 				fields = append(fields, elog.Any("req", cmd.req))
