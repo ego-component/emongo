@@ -91,10 +91,9 @@ func accessInterceptor(compName string, c *config, logger *elog.Component) func(
 
 			var fields = make([]elog.Field, 0, 15)
 			fields = append(fields,
-				elog.FieldComponentName(compName),
 				elog.FieldMethod(cmd.name),
 				elog.FieldCost(cost),
-				elog.String("dbName", cmd.dbName),
+				elog.FieldKey(cmd.dbName),
 				elog.String("collName", cmd.collName),
 				elog.String("cmdName", cmd.name),
 			)
@@ -104,13 +103,15 @@ func accessInterceptor(compName string, c *config, logger *elog.Component) func(
 			if c.EnableAccessInterceptorRes && err == nil {
 				fields = append(fields, elog.Any("res", cmd.res))
 			}
-
+			event := "normal"
+			isSlowLog := false
 			if c.SlowLogThreshold > time.Duration(0) && cost > c.SlowLogThreshold {
-				logger.Warn("slow", fields...)
+				event = "slow"
+				isSlowLog = true
 			}
 
 			if err != nil {
-				fields = append(fields, elog.FieldEvent("error"), elog.FieldErr(err))
+				fields = append(fields, elog.FieldEvent(event), elog.FieldErr(err))
 				if errors.Is(err, mongo.ErrNoDocuments) {
 					logger.Warn("access", fields...)
 					return err
@@ -119,9 +120,13 @@ func accessInterceptor(compName string, c *config, logger *elog.Component) func(
 				return err
 			}
 
-			if c.EnableAccessInterceptor {
-				fields = append(fields, elog.FieldEvent("normal"))
-				logger.Info("access", fields...)
+			if c.EnableAccessInterceptor || isSlowLog {
+				fields = append(fields, elog.FieldEvent(event))
+				if isSlowLog {
+					logger.Warn("access", fields...)
+				} else {
+					logger.Info("access", fields...)
+				}
 			}
 			return nil
 		}
