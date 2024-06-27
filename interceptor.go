@@ -113,8 +113,15 @@ func accessInterceptor(compName string, c *config, logger *elog.Component) func(
 			if err != nil {
 				fields = append(fields, elog.FieldEvent(event), elog.FieldErr(err))
 				if errors.Is(err, mongo.ErrNoDocuments) {
-					logger.Warn("access", fields...)
+					// 这种日志可能很多，也没必要，只有开启的时候，或者慢日志的时候记录
+					if c.EnableAccessInterceptor || isSlowLog {
+						logger.Warn("access", fields...)
+					}
 					return err
+				}
+				// 如果用户没开启req，那么错误必记录Req
+				if !c.EnableAccessInterceptorReq {
+					fields = append(fields, elog.Any("req", cmd.req))
 				}
 				logger.Error("access", fields...)
 				return err
